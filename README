@@ -1,13 +1,58 @@
-ABOUT
-=====
+DESCRIPTION
+===========
 
-Owrtconfig is a script that configure multiple Openwrt routers all connected to the same switch.
-It loads a list of nodes (nodes.csv) and a list of commands to execute on each router (commands.sh), and it can also upload files.
+Owrtconfig is a script that configure multiple Openwrt routers all connected to
+the same switch.
+It has been used at the Wireless Battle Mesh second edition (WBMv2) in order to
+configure multiple foneras running Openwrt, and freshly flashed with the
+default firmware (all the foneras has the default IP 192.168.1.1).
+It changes the ARP cache to communicate with each router.
+It loads a list of nodes (nodes.csv) and a list of commands to execute on each
+router (commands.sh), and it can also upload files.
 
 DEPENDENCIES
 ============
 
-list of dependencies here
+Please check that your system has the following commands (beware that
+stripped-down versions of those provided by busybox might not work):
+
+cat echo sudo arp ping ssh nc tail
+
+TESTED ON
+=========
+
+Ubuntu Karmic (9.10)
+
+USAGE
+=====
+
+./owrtconfig -telnet nodes.csv commands.sh
+./owrtconfig -ssh nodes.csv commands.sh
+./owrtconfig -scp nodes.csv commands.sh
+
+NODES.CSV
+=========
+
+The input hosts file format (nodes.csv) is:
+
+MAC,PARAM1,PARAM2,PARAM3,PARAM4,PARAM5,PARAM6,PARAM7,PARAM8,PARAM9
+
+In the default script, the parameters are (NU = Not Used):
+
+* PARAM1: hostname
+* PARAM2: wired IP address
+* PARAM3: wireless IP address
+* PARAM4: NU
+* PARAM5: channel
+* PARAM6: adhoc cell
+* PARAM7: return-routes
+* PARAM8: forward-routes
+* PARAM9: NU
+
+SSH KEYS
+========
+
+Setting up ssh keys with dropbear can be tricky.
 
 TODO
 ====
@@ -17,52 +62,10 @@ TODO
 * Make a check on dependencies
 * Document howto generate ssh keys
 
-OWRTCONFIG
-==========
-
-Usage:
-
-./owrtconfig -telnet nodes.csv commands.sh
-./owrtconfig -ssh nodes.csv commands.sh
-./owrtconfig -scp nodes.csv commands.sh
-
-NODES.CSV
-=========
-
-Document the format here
-
-SSH KEYS
-========
-
-Can be tricky 
-
-LOOPSSH
-=======
-
-Usage:
-
-./loopssh.sh nodes.csv nodes.sh
-
-Before using the loopssh.sh, you have to install the ssh keys to avoid using a password.
-
-LOOPTELNET
-==========
-
-Usage:
-
-./looptelnet.sh nodes.csv nodes.sh
-
-LOOPCOPY
-========
-
-Usage:
-
-./loopcopy.sh nodes.csv listoffiles
-
-
 AUTHORS
 =======
 
+Nicolas Thill <nico@openwrt.org>
 Pieter Heremans <pieter@l45.be>
 Benjamin Henrion <bh@udev.org>
 
@@ -71,153 +74,11 @@ LICENCE
 
 GPLv2
 
-# SRC: http://battlemesh.org/BattleMeshV3/NodeConfigScript?action=raw
+LINKS
+=====
 
-= What is the NodeConfig script? =
-
-use this NodeConfig scripts to easily change the configuration of any number of nodes.  Just connect all nodes over the cabled ethernet network, note all the mac-addresses of the nodes you want to configure, and run the available scripts configure all of those.
-
-
-usage of the attached scripts:
-
-   ../telnet-loop.sh nodetable.csv nodeconfigscript
-
-will connect to all nodes (one-by-one), listed in the nodetable.csv (mac-addresses, etc.) execute the nodeconfigscript _on the node.
-It is using the telnet daemon running on the nodes to connect.
-
-the variant ssh-loop.sh uses ssh to connect to the nodes -- use ssh keys to connect without having to enter passwords... 
-
-use copy-loop.sh to copy files over to all of the nodes listed in your table.
-
-= Files =
-
-<<AttachList>>
-
-
-= Snippets =
-
-usefull short fragments of code to script the configuration -- we use the 'uci' command to set the system configuration, as it is standard on openwrt and easy to use command line tool.
-
-== using parameters ==
-
-the 'node-configuration-factory' parses the node table, and exports the parameters specified using the variable names @PARAM0@ to @PARAM9@ -- use these in your scripts for node specific parameters.
-
-eg.  if you specified an ip address in the 4th column 
-
-{{{ IP="@PARAM3@" }}}
-
-
-
-== setting hostname ==
-
-{{{ 
-set -a
-NAME="@PARAM1@"
-sysctl -w kernel.hostname=$NAME
-uci set system.@system[0].hostname=$NAME
-uci commit
-}}}
-
-== wireless device name ==
-
-the wireless device has different names on different types of devices -- you can query the name from the uci system (it's typically 'wifi0' or 'radio0')
-
-{{{
-DEVICE=`uci get wireless.@wifi-iface[0].device`
-}}}
-
-
-
-and then use it further in your script, eg.
-{{{
-uci set wireless.$DEVICE.channel=4
-}}}
-
-== configure wireless interface ==
-
-{{{
-set -a
-# adapt PARAM2 to the parameter in your node table
-IP="@PARAM2@"
-#query wireless device' name
-DEVICE=`uci get wireless.@wifi-iface[0].device`
-
-uci set wireless.$DEVICE.channel=5
-uci set wireless.$DEVICE.disabled=0
-uci set wireless.$DEVICE.hwmode=11g
-uci set wireless.@wifi-iface[0].network=wlan
-uci set wireless.@wifi-iface[0].mode=adhoc
-uci set wireless.@wifi-iface[0].ssid=WBM2009v2-Test0
-uci set wireless.@wifi-iface[0].encryption=none
-uci set wireless.@wifi-iface[0].bssid=02:ca:fe:ca:ca:00
-uci set wireless.@wifi-iface[0].rate=54M
-uci set wireless.@wifi-iface[0].bgscan=0
-uci set network.wlan=interface
-uci set network.wlan.proto=static
-uci set network.wlan.ipaddr=$IP
-uci set network.wlan.netmask=255.255.255.0
-
-# commit uci changes and restart wifi
-uci commit wireless && wifi
-
-}}}
-
-== disabling dnsmasq, firewall, httpd ==
-
-{{{
-set -a
-
-/etc/init.d/dnsmasq stop
-/etc/init.d/dnsmasq disable
-
-/etc/init.d/firewall stop
-/etc/init.d/firewall disable
-
-/etc/init.d/httpd stop
-/etc/init.d/httpd disable
-}}}
-
-== configuring an alias ethernet interface ==
-
-as it is mandatory to keep the wired interface configured with it's default settings (ip 192.168.1.1/24) for the node-configuration-factory to work -- you need to configure an alias interface if you want to use the ethernet interface with other configuration settings. 
-
-eg.
-{{{
-WIREDIP="@PARAM2@"
-uci set network.zlan=alias
-uci set network.zlan.interface=lan
-uci set network.zlan.proto=static
-uci set network.zlan.ipaddr=$WIREDIP
-uci set network.zlan.netmask=255.255.255.0
-uci commit
-}}}
-
-
-== rc.local ==
-
-executing commands after booting -- quick and dirty
-
-
-eg. (PARAM7 parameter contained a static routing configuration in this case: 'route add -net 192.168.3.0/24 gw 192.168.13.1 && route add -net 192.168.13.0/24 gw 192.168.4.1'  )
-
-{{{
-cat > /etc/rc.local << EOF
-
-echo 1 > /proc/sys/net/ipv4/ip_forward
-eval "@PARAM7@"
-exit 0
-EOF
-
-}}}
-
-== reset a configured node to default config ==
-
-a neat, easy and clean way to reset a node is to use a feature of the squashfs+jffs filesystem:  the squashfs partition contains the pristine install, while the jffs contains all configuration and added packages.
-
-executing the openwrt command 
-
-{{{ firstboot }}}
-
-will cleanup the jffs partition and reset the configuration to its initial state
-
- 
+* http://battlemesh.org/BattleMeshV3/NodeConfigScript
+* http://hackerspace.be/Wbm2009v2/NodeConfigurationFactory
+* http://hackerspace.be/Wbm2009v2/NodeConfig
+* http://hackerspace.be/Wbm2009v2/ConfigExpectScript
+* http://www.zoobab.com/fonera
