@@ -37,17 +37,17 @@ The input hosts file format (nodes.csv) is:
 
 MAC,PARAM1,PARAM2,PARAM3,PARAM4,PARAM5,PARAM6,PARAM7,PARAM8,PARAM9
 
-In the default script, the parameters are (NU = Not Used):
+where:
 
 * PARAM1: hostname
 * PARAM2: wired IP address
 * PARAM3: wireless IP address
-* PARAM4: NU
+* PARAM4: Not Used
 * PARAM5: channel
 * PARAM6: adhoc cell
 * PARAM7: return-routes
 * PARAM8: forward-routes
-* PARAM9: NU
+* PARAM9: Not Used
 
 SSH KEYS
 ========
