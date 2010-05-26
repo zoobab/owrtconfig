@@ -39,14 +39,14 @@ MAC,PARAM1,PARAM2,PARAM3,PARAM4,PARAM5,PARAM6,PARAM7,PARAM8,PARAM9
 
 where:
 
-* PARAM1: hostname
-* PARAM2: wired IP address
-* PARAM3: wireless IP address
+* PARAM1: hostname (ex: node01)
+* PARAM2: wired IP address (ex: 192.168.20.1)
+* PARAM3: wireless IP address (ex: 192.168.50.1)
 * PARAM4: Not Used
-* PARAM5: channel
-* PARAM6: adhoc cell
-* PARAM7: return-routes
-* PARAM8: forward-routes
+* PARAM5: channel (ex: 11)
+* PARAM6: adhoc cell (ex: 02:02:02:02:aa:aa) (adhoc cells needs to start with 02: ?)
+* PARAM7: return-routes (ex: ???)
+* PARAM8: forward-routes (ex: ???)
 * PARAM9: Not Used
 
 SSH KEYS
