@@ -46,8 +46,8 @@ where:
 * PARAM4: Not Used
 * PARAM5: channel (ex: 11)
 * PARAM6: adhoc cell (ex: 02:02:02:02:aa:aa) (adhoc cells needs to start with 02: ?)
-* PARAM7: return-routes (ex: ???)
-* PARAM8: forward-routes (ex: ???)
+* PARAM7: return-routes (ex: route add -net 192.168.20.0/24 gw 192.168.20.1)
+* PARAM8: forward-routes (ex: route add -net 192.168.6.0/24 gw 192.168.4.2  && route add -net 192.168.15.0/24 gw 192.168.4.2  && route add -net 192.168.5.0/24 gw 192.168.4.2)
 * PARAM9: Not Used
 
 SSH KEYS

@@ -23,6 +23,8 @@ __END_OF_USAGE
 PROTOCOL=$1
 HOSTS=$2
 COMMANDS=$3
+TELNETCMD=`nc "$IP" 23 2>&1`
+TELNETCMD2=`grep e`
 [ -n "$HOSTS" -a -n "$COMMANDS" ] || {
   _usage
   exit 1
@@ -61,7 +63,7 @@ cat $HOSTS | grep -v '^#' |  sed -e 's/ *, */,/g' -e's/\//###/g' -e 's/\&\&/####
 		-e "s/@PARAM9@/$param9/g" \
 		-e "s/####/\&\&/g" \
 		-e "s/###/\//g" \
-        | nc "$IP" 23 2>&1 \
+        | $TELNETCMD2 \
 	| tail -n +$SKIP_LINE_COUNT
   else
     echo "not found! ---" 1>&2
