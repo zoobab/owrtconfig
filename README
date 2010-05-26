@@ -39,6 +39,7 @@ MAC,PARAM1,PARAM2,PARAM3,PARAM4,PARAM5,PARAM6,PARAM7,PARAM8,PARAM9
 
 where:
 
+* MAC: MAC address (ex: 00:18:84:29:b0:0c)
 * PARAM1: hostname (ex: node01)
 * PARAM2: wired IP address (ex: 192.168.20.1)
 * PARAM3: wireless IP address (ex: 192.168.50.1)
