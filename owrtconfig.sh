@@ -2,7 +2,9 @@
 
 ME="owrtconfig.sh"
 VER="0.02"
-IP="192.168.1.1"
+IP="192.168.1.1" # IP address of the openwrt router
+MYIP="192.168.1.2" # IP address of my laptop
+MYIFACE="eth0" # Interface of my laptop
 SKIP_LINE_COUNT=11
 
 _usage() {
@@ -23,8 +25,6 @@ __END_OF_USAGE
 PROTOCOL=$1
 HOSTS=$2
 COMMANDS=$3
-TELNETCMD=`nc "$IP" 23 2>&1`
-TELNETCMD2=`grep e`
 [ -n "$HOSTS" -a -n "$COMMANDS" ] || {
   _usage
   exit 1
@@ -38,10 +38,31 @@ TELNETCMD2=`grep e`
   exit 1
 }
 
+sshcmd( )
+{
+ssh -T -o "StrictHostKeyChecking no" root@"$IP" 2>&1
+}
+
+telnetcmd( )
+{
+nc "$IP" 23 2>&1
+}
+
+scpcmd( )
+{
+echo Helloooo I am SCP!!!
+}
+
+
+#        | if [ $1 == "-ssh" ]; then sshcmd; fi && if [ $1 == "-telnet" ]; then telnetcmd; fi \
+
 echo "1. checking sudo..."
 sudo true || exit 1
 
-echo "2. looping over nodes..."
+echo "2. configuring my laptop..."
+sudo ifconfig $MYIFACE $MYIP up; ifconfig $MYIFACE
+
+echo "3. looping over nodes..."
 IFS=","
 cat $HOSTS | grep -v '^#' |  sed -e 's/ *, */,/g' -e's/\//###/g' -e 's/\&\&/####/g'  | while read mac param1 param2 param3 param4 param5 param6 param7 param8 param9; do
   echo -n "-- mac: $mac -- " 1>&2
@@ -63,7 +84,7 @@ cat $HOSTS | grep -v '^#' |  sed -e 's/ *, */,/g' -e's/\//###/g' -e 's/\&\&/####
 		-e "s/@PARAM9@/$param9/g" \
 		-e "s/####/\&\&/g" \
 		-e "s/###/\//g" \
-        | $TELNETCMD2 \
+        | if [ $1 == "-telnet" ]; then telnetcmd; fi && if [ $1 == "-ssh" ]; then sshcmd; fi \
 	| tail -n +$SKIP_LINE_COUNT
   else
     echo "not found! ---" 1>&2

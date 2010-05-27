@@ -1,15 +1,13 @@
-#!/bin/sh 
+#!/bin/sh
 
-# This script is a list of commands that are executed on the OpenWRT router in order to configure it.
-
-# setting hostname 
+echo "setting hostname"
 set -a
 NAME="@PARAM1@"
 sysctl -w kernel.hostname=$NAME
 uci set system.@system[0].hostname=$NAME
 uci commit
 
-# setting wireless 
+echo "setting wireless"
 set -a
 IP="@PARAM3@"
 CHANNEL="@PARAM5@"
@@ -33,7 +31,7 @@ uci set wireless.wifi0.disabled=0
 uci commit wireless && wifi
 uci commit
 
-# disabling servers
+echo "disabling servers"
 set -a
 /etc/init.d/dnsmasq stop
 /etc/init.d/dnsmasq disable
@@ -42,7 +40,7 @@ set -a
 /etc/init.d/httpd stop
 /etc/init.d/httpd disable
 
-# configure wired network interface
+echo "configuring wired network interface"
 WIREDIP="@PARAM2@"
 uci set network.zlan=alias
 uci set network.zlan.interface=lan
@@ -51,6 +49,6 @@ uci set network.zlan.ipaddr=$WIREDIP
 uci set network.zlan.netmask=255.255.255.0
 uci commit
 
-
-reboot
+#reboot
+echo "finished!"
 exit
