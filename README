@@ -53,7 +53,8 @@ where:
 SSH KEYS
 ========
 
-Setting up ssh keys with dropbear can be tricky.
+Look on this website howto setup ssh keys for automatic login:
+http://telscom.ch/?p=217
 
 TODO
 ====
