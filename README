@@ -59,10 +59,11 @@ http://telscom.ch/?p=217
 TODO
 ====
 
-* Add a switch (-telnet -ssh -copy) instead of having near three identical scripts
-* Document the format of nodes.csv
+* --Add a switch (-telnet -ssh -copy) instead of having near three identical scripts--
+* Add a switch for -scp
+* --Document the format of nodes.csv--
 * Make a check on dependencies
-* Document howto generate ssh keys
+* --Document howto generate ssh keys--
 
 AUTHORS
 =======
