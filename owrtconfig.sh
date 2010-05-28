@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 ME="owrtconfig.sh"
 VER="0.02"
