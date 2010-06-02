@@ -1,77 +1,127 @@
 #!/bin/sh
 
 ME="owrtconfig.sh"
-VER="0.02"
-IP="192.168.1.1" # IP address of the openwrt router
-MYIP="192.168.1.2" # IP address of my laptop
-MYIFACE="eth0" # Interface of my laptop
-SKIP_LINE_COUNT=11
+VER="0.03"
+IP="192.168.1.1"
+SKIP_LINE_COUNT=0
+
+_error() {
+	echo "$ME: $*"
+	exit 1
+}
 
 _usage() {
   cat <<__END_OF_USAGE
 $ME v$VER
 
-Usage: $ME -PROTOCOL HOSTS COMMANDS
+Usage: $ME OPTIONS -H HOSTS -C COMMANDS
 
-  PROTOCOL   -ssh, -telnet, -scp
-  HOSTS      file containing hosts list (hwaddr,param1,param2...param9))
-  COMMANDS   file containing commands to be run on each host
+  -P PROTOCOL   protocol used to connect on each node (ssh or telnet, default: ssh)
+  -H HOSTS      file containing hosts list (hwaddr,param1,param2...param9))
+  -C COMMANDS   file containing commands to be run on each host
+  -a ADDRESS    default IP address of each host (default: 192.168.1.1)
+  -n LINES      lines to skip from remote output (default: 0)
+  -s            use sudo (when you're not running this script as root)
 
-Example: $ME -telnet nodes.csv commands.sh
+  -h            display usage information (this help screen)
+  -v            display version information
 
 __END_OF_USAGE
 }
 
-PROTOCOL=$1
-HOSTS=$2
-COMMANDS=$3
-[ -n "$HOSTS" -a -n "$COMMANDS" ] || {
-  _usage
-  exit 1
-}
-[ -f "$HOSTS" ] || {
-  echo "$ME: error accessing HOSTS file '$HOSTS'"
-  exit 1
-}
-[ -f "$COMMANDS" ] || {
-  echo "$ME: error accessing COMMANDS file '$COMMANDS'"
-  exit 1
+_version() {
+  cat <<__END_OF_VERSION
+$ME v$VER
+__END_OF_VERSION
 }
 
-sshcmd( )
+_parse_args() {
+	while [ -n "$1" ]; do
+		case $1 in
+		  -P|--protocol)
+			shift
+			PROTOCOL="$1"
+			;;
+		  -H|--hosts)
+			shift
+			HOSTS_F="$1"
+			;;
+		  -C|--commands)
+			shift
+			COMMANDS_F="$1"
+			;;
+		  -a)
+			shift
+			IP="$1"
+			;;
+		  -n)
+			shift
+			SKIP_LINE_COUNT="$1"
+			;;
+		  -s|--sudo)
+			SUDO_FUNC="sudo"
+			;;
+		  -h|--help)
+			_usage
+			exit 0
+			;;
+		  -v|--version)
+			_version
+			exit 0
+			;;
+		  *)
+			_error "unexpected argument"
+			;;
+		esac
+		shift
+	done
+}
+
+_parse_args $*
+
+[ -n "$PROTOCOL" ] \
+	|| _error "missing '-P PROTOCOL' argument"
+[ -n "$HOSTS_F" ] \
+	|| _error "missing '-H HOSTS' argument"
+[ -n "$COMMANDS_F" ] \
+	|| _error "missing '-C COMMANDS' argument"
+[ -f "$HOSTS_F" ] \
+	|| _error "error accessing HOSTS file '$HOSTS_F'"
+[ -f "$COMMANDS_F" ] \
+	|| _error "error accessing COMMANDS file '$COMMANDS_F'"
+
+_ssh( )
 {
-ssh -T -o "StrictHostKeyChecking no" root@"$IP" 2>&1
+	ssh -T -o "StrictHostKeyChecking no" root@"$IP" 2>&1
 }
 
-telnetcmd( )
+_telnet( )
 {
-nc "$IP" 23 2>&1
+	nc -i 1 -t "$IP" 23 2>&1
 }
 
-scpcmd( )
-{
-echo Helloooo I am SCP!!!
-}
-
-
-#        | if [ $1 == "-ssh" ]; then sshcmd; fi && if [ $1 == "-telnet" ]; then telnetcmd; fi \
+case $PROTOCOL in
+  ssh)
+	PROTOCOL_FUNC="_ssh"
+	;;
+  telnet)
+	PROTOCOL_FUNC="_telnet"
+	;;
+esac
 
 echo "1. checking sudo..."
 sudo true || exit 1
 
-echo "2. configuring my laptop..."
-sudo ifconfig $MYIFACE $MYIP up; ifconfig $MYIFACE
-
-echo "3. looping over nodes..."
+echo "2. looping over nodes..."
 IFS=","
-cat $HOSTS | grep -v '^#' |  sed -e 's/ *, */,/g' -e's/\//###/g' -e 's/\&\&/####/g'  | while read mac param1 param2 param3 param4 param5 param6 param7 param8 param9; do
+cat $HOSTS_F | grep -v '^#' |  sed -e 's/ *, */,/g' -e's/\//###/g' -e 's/\&\&/####/g'  | while read mac param1 param2 param3 param4 param5 param6 param7 param8 param9; do
   echo -n "-- mac: $mac -- " 1>&2
   sudo arp -s $IP $mac >/dev/null
   ping -c 1 -q -r -t 1 $IP >/dev/null
   if [ $? -eq 0 ]; then
     echo "alive! ---" 1>&2
     echo "[$mac] [$param1] [$param2] [$param3] [$param4] [$param5] [$param6] [$param7] [$param8] [$param9]"
-    cat $COMMANDS \
+    cat $COMMANDS_F \
 	| sed	-e "s/@MAC@/$mac/g" \
 		-e "s/@PARAM1@/$param1/g" \
 		-e "s/@PARAM2@/$param2/g" \
@@ -84,8 +134,7 @@ cat $HOSTS | grep -v '^#' |  sed -e 's/ *, */,/g' -e's/\//###/g' -e 's/\&\&/####
 		-e "s/@PARAM9@/$param9/g" \
 		-e "s/####/\&\&/g" \
 		-e "s/###/\//g" \
-        | if [ $1 == "-telnet" ]; then telnetcmd; fi && if [ $1 == "-ssh" ]; then sshcmd; fi \
-	| tail -n +$SKIP_LINE_COUNT
+        | $PROTOCOL_FUNC | tail -n +$SKIP_LINE_COUNT
   else
     echo "not found! ---" 1>&2
   fi
