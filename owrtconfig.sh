@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ME="owrtconfig.sh"
-VER="0.04"
+VER="0.05"
 
 _error() {
 	echo "$ME: $*"
@@ -20,9 +20,10 @@ Usage: $ME OPTIONS -H HOSTS -C COMMANDS
   -a ADDRESS    default IP address of each host (default: 192.168.1.1)
   -n LINES      lines to skip from remote output (default: 0)
   -s            use sudo (when you're not running this script as root)
+  -v            be verbose
 
   -h            display usage information (this help screen)
-  -v            display version information
+  -V            display version information
 
 __END_OF_USAGE
 }
@@ -37,6 +38,7 @@ _parse_args() {
 	IP="192.168.1.1"
 	PROTOCOL_FUNC="_ssh"
 	SKIP_LINE_COUNT=0
+	VERBOSITY_LEVEL=0
 	while [ -n "$1" ]; do
 		case $1 in
 		  -P|--protocol)
@@ -77,7 +79,10 @@ _parse_args() {
 			_usage
 			exit 0
 			;;
-		  -v|--version)
+		  -v|--verbose)
+			VERBOSITY_LEVEL=$(($VERBOSITY_LEVEL + 1))
+			;;
+		  -V|--version)
 			_version
 			exit 0
 			;;
@@ -102,7 +107,7 @@ _parse_args $*
 
 _ssh( )
 {
-	ssh -T -o "StrictHostKeyChecking no" root@"$IP" 2>&1
+	ssh -T -o "StrictHostKeyChecking no" -o "UserKnownHostsFile /dev/null" root@"$IP" 2>&1
 }
 
 _telnet( )
@@ -126,7 +131,9 @@ cat $HOSTS_F | grep -v '^#' |  sed -e 's/ *, */,/g' -e's/\//###/g' -e 's/\&\&/##
 	ping -c 1 -q -r -t 1 $IP >/dev/null
 	if [ $? -eq 0 ]; then
 		echo "alive! --" 1>&2
-		echo "[$mac] [$param1] [$param2] [$param3] [$param4] [$param5] [$param6] [$param7] [$param8] [$param9]"
+		if [ $VERBOSITY_LEVEL -gt 0 ]; then
+			echo "** parameters: [$mac] [$param1] [$param2] [$param3] [$param4] [$param5] [$param6] [$param7] [$param8] [$param9]" 1>&2
+		fi
 		cat $COMMANDS_F \
 			| sed -e "s/@MAC@/$mac/g" \
 			      -e "s/@PARAM1@/$param1/g" \
