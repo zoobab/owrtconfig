@@ -1,0 +1,153 @@
+# all-in-one config script for WBMv3 test case 1  
+set -a
+
+HOSTNAME="@PARAM1@"
+SUFFIX="@PARAM2@"
+
+CHANNEL="11"
+ESSID="WBMv3-Test-1"
+BSSID="02:02:CA:FE:CA:FE"
+
+sysctl -w kernel.hostname=$HOSTNAME
+uci set system.@system[0].hostname=$HOSTNAME
+
+uci set network.wlan=interface
+uci set network.wlan.proto=static
+uci set network.wlan.ipaddr=10.10.100.$SUFFIX
+uci set network.wlan.netmask=255.255.255.0
+
+uci set network.zlan=alias
+uci set network.zlan.interface=lan
+uci set network.zlan.proto=static
+uci set network.zlan.ipaddr=10.10.99.$SUFFIX
+uci set network.zlan.netmask=255.255.255.0
+
+uci set wireless.wifi0.channel=$CHANNEL
+uci set wireless.wifi0.disabled=0
+uci set wireless.wifi0.hwmode=11g
+uci set wireless.wifi0.txpower=20
+
+uci set wireless.@wifi-iface[0].network=wlan
+uci set wireless.@wifi-iface[0].mode=adhoc
+uci set wireless.@wifi-iface[0].ssid=$ESSID
+uci set wireless.@wifi-iface[0].encryption=none
+uci set wireless.@wifi-iface[0].bssid=$BSSID
+uci set wireless.@wifi-iface[0].rate=54M
+uci set wireless.@wifi-iface[0].bgscan=0
+
+
+# batmand
+
+uci set network.wlan1=alias
+uci set network.wlan1.interface=wlan
+uci set network.wlan1.proto=static
+uci set network.wlan1.ipaddr=10.10.101.$SUFFIX
+uci set network.wlan1.netmask=255.255.255.0
+
+uci set batmand.general.interface=ath0:1
+
+
+# babel
+
+uci set network.wlan2=alias
+uci set network.wlan2.interface=wlan
+uci set network.wlan2.proto=static
+uci set network.wlan2.ipaddr=10.10.102.$SUFFIX
+uci set network.wlan2.netmask=255.255.255.0
+
+uci set babeld.wlan2=interface
+uci set babeld.wlan2.ignore=false
+
+uci set babeld.filter1=filter
+uci set babeld.filter1.type=redistribute
+uci set babeld.filter1.local=true
+uci set babeld.filter1.ip='10.10.102.0/24'
+uci set babeld.filter1.action=allow
+
+uci set babeld.filter2=filter
+uci set babeld.filter2.type=redistribute
+uci set babeld.filter2.local=true
+uci set babeld.filter2.ip='fdba:1943:e753::/64'
+uci set babeld.filter2.action=allow
+
+uci set babeld.filter3=filter
+uci set babeld.filter3.type=redistribute
+uci set babeld.filter3.local=true
+uci set babeld.filter3.action=deny
+
+uci set babeld.filter4=filter
+uci set babeld.filter4.type=in
+uci set babeld.filter4.ip='10.10.102.0/24'
+uci set babeld.filter4.action=allow
+
+uci set babeld.filter5=filter
+uci set babeld.filter5.type=in
+uci set babeld.filter5.ip='fdba:1943:e753::/64'
+uci set babeld.filter5.action=allow
+
+uci set babeld.filter6=filter
+uci set babeld.filter6.type=in
+uci set babeld.filter6.action=deny
+
+
+# olsr
+
+uci set network.wlan3=alias
+uci set network.wlan3.interface=wlan
+uci set network.wlan3.proto=static
+uci set network.wlan3.ipaddr=10.10.103.$SUFFIX
+uci set network.wlan3.netmask=255.255.255.0
+
+rm -f /etc/config/olsrd
+touch /etc/config/olsrd
+uci add olsrd olsrd
+uci set olsrd.@olsrd[0].IpVersion=4
+uci set olsrd.@olsrd[0].DebugLevel=9
+uci add olsrd LoadPlugin
+uci set olsrd.@LoadPlugin[0]=LoadPlugin
+uci set olsrd.@LoadPlugin[0].library=olsrd_txtinfo.so.0.1
+uci set olsrd.@LoadPlugin[0].accept="127.0.0.1"
+uci set olsrd.@LoadPlugin[0].port="10001"
+uci add olsrd Interface
+uci set olsrd.@Interface[0]=Interface
+uci set olsrd.@Interface[0].interface=wlan3
+uci set olsrd.@Interface[0].Ip4Broadcast=10.10.103.255
+
+
+# batman-adv
+
+#uci set network.wlan4=alias
+#uci set network.wlan4.interface=wlan
+#uci set network.wlan4.proto=static
+#uci set network.wlan4.ipaddr=$IP4
+#uci set network.wlan4.netmask=255.255.255.0
+uci set network.wlan4=interface
+uci set network.wlan4.ifname=bat0
+uci set network.wlan4.proto=static
+uci set network.wlan4.ipaddr=10.10.104.$SUFFIX
+uci set network.wlan4.netmask=255.255.255.0
+
+uci set batman-adv.bat0.interfaces=ath0
+
+
+# bmx
+
+uci set network.wlan5=alias
+uci set network.wlan5.interface=wlan
+uci set network.wlan5.proto=static
+uci set network.wlan5.ipaddr=10.10.105.$SUFFIX
+uci set network.wlan5.netmask=255.255.255.0
+
+uci set bmx.@dev[0].dev=ath0:4
+
+uci commit
+
+
+[ -x /etc/init.d/babeld ] && /etc/init.d/babeld enable
+[ -x /etc/init.d/batman-adv ] && /etc/init.d/batman-adv enable
+[ -x /etc/init.d/batmand ] && /etc/init.d/batmand enable
+[ -x /etc/init.d/bmx ] && /etc/init.d/bmx enable
+[ -x /etc/init.d/olsrd ] && /etc/init.d/olsrd enable
+
+[ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable
+[ -x /etc/init.d/impd4e ] && /etc/init.d/impd4e disable
