@@ -10,6 +10,7 @@ uci commit
 echo "setting wireless"
 set -a
 IP="@PARAM3@"
+ESSID="@PARAM4@"
 CHANNEL="@PARAM5@"
 CELL="@PARAM6@"
 uci set wireless.wifi0.channel=$CHANNEL
@@ -18,7 +19,7 @@ uci set wireless.wifi0.hwmode=11g
 uci set wireless.wifi0.txpower=1
 uci set wireless.@wifi-iface[0].network=wlan
 uci set wireless.@wifi-iface[0].mode=adhoc
-uci set wireless.@wifi-iface[0].ssid=WBM2009v2-Test0
+uci set wireless.@wifi-iface[0].ssid=$ESSID
 uci set wireless.@wifi-iface[0].encryption=none
 uci set wireless.@wifi-iface[0].bssid=$CELL
 uci set wireless.@wifi-iface[0].rate=54M
